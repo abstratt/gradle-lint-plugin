@@ -56,4 +56,16 @@ class SourceCollectorTest extends ProjectSpec {
         then:
         files.containsAll([rootFile, level1Sibling1, level1Sibling2, level1Sibling3, level2])
     }
+
+    def 'xdcl build files are not collected'() {
+        given:
+        def buildFile = new File(project.projectDir, 'build.gradle.xdcl')
+        buildFile.text = """
+            javaLibrary {
+            }
+        """
+
+        expect:
+        SourceCollector.getAllFiles(buildFile, project).isEmpty()
+    }
 }

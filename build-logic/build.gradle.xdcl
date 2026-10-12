@@ -1,0 +1,12 @@
+xdclGradlePlugin {
+  dependencies {
+    // The Gradle plugins the reactions apply to the main build's projects.
+    implementation [
+      "com.netflix.nebula:nebula-plugin-plugin:22.0.2",
+      "org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0",
+      "com.gradleup.shadow:shadow-gradle-plugin:9.0.0-beta7",
+      "org.ajoberstar.grgit:grgit-core:4.1.1",
+      "com.gradle:develocity-gradle-plugin:4.0.2",
+    ]
+  }
+}

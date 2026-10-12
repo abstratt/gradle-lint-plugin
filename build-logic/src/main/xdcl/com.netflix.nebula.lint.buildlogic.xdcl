@@ -1,0 +1,9 @@
+plugin {
+  displayName "gradle-lint-plugin build logic"
+  description "Project types and conventions for building gradle-lint-plugin."
+  reactions [
+    :com.netflix.nebula.lint.buildlogic.NebulaGradlePluginReaction,
+    :com.netflix.nebula.lint.buildlogic.XdclPluginModuleReaction,
+    :com.netflix.nebula.lint.buildlogic.BuildScanReaction,
+  ]
+}

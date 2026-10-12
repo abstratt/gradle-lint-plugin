@@ -1,0 +1,13 @@
+// Build logic for gradle-lint-plugin: contributes the project types the main build's
+// *.gradle.xdcl scripts configure, and the reactions that wire the real Gradle plugins.
+settings {
+  plugins [
+    { id "plugin-development-ecosystem" }
+  ]
+  dependencyResolutionManagement {
+    repositories [:gradlePluginPortal, :mavenCentral]
+  }
+  rootProject {
+    name "build-logic"
+  }
+}

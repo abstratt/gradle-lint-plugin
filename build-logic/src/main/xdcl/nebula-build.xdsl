@@ -1,0 +1,110 @@
+package com.netflix.nebula.lint.buildlogic
+
+import xdcl.gradle.bootstrap
+
+/// A project contact, published into the POM. Keyed by email in [NebulaGradlePlugin.contacts].
+record Contact {
+  moniker: String
+  github: String?
+}
+
+/// A Gradle plugin this project registers. Keyed by registration name in
+/// [NebulaGradlePlugin.plugins].
+record PluginDeclaration {
+  id: String
+  displayName: String
+  description: String
+  /// Fully-qualified name of the `Plugin` implementation.
+  implementationClass: String
+  tags: [String]?
+}
+
+/// A dependency that needs more than its coordinates.
+record Module {
+  /// `group:name:version` coordinates.
+  notation: String
+  /// Whether the module's own dependencies are resolved too.
+  transitive: Bool = true
+  /// Versions that must never be selected.
+  reject: [String]?
+  /// Why the dependency is declared the way it is.
+  because: String?
+}
+
+/// A dependency: plain `group:name:version` coordinates, or a [Module] carrying extra rules.
+type DependencyNotation = String | Module
+
+/// The dependency scopes of a Nebula Gradle plugin project.
+record PluginDependencies {
+  /// Runtime dependencies that stay external: on every classpath and in the published POM, never
+  /// packed into the jar.
+  shadow: [DependencyNotation]?
+  /// Dependencies packed into the plugin jar (and relocated — see [Shading]), so they stay out of
+  /// the published POM.
+  bundled: [DependencyNotation]?
+  compileOnly: [DependencyNotation]?
+  testImplementation: [DependencyNotation]?
+  /// Whether Gradle TestKit is on the compile-only classpath.
+  compileOnlyGradleTestKit: Bool = false
+  /// Coordinates forced onto every configuration.
+  force: [String]?
+}
+
+/// What the plugin jar bundles and how it is relocated.
+record Shading {
+  /// `group:name` coordinates of the [bundled][PluginDependencies.bundled] dependencies to pack.
+  include: [String]?
+  /// Package relocations: original package prefix to relocated prefix.
+  relocate: [String: String]?
+}
+
+/// A Gradle plugin built the Nebula way: Groovy and Kotlin sources, released through
+/// `com.netflix.nebula.plugin-plugin`, shipped as a shaded jar.
+template NebulaGradlePlugin {
+  nebulaGradlePlugin {
+    description: String
+    /// Contacts by email address.
+    contacts: [String: Contact]?
+    /// Plugin registrations by name.
+    plugins: [String: PluginDeclaration]
+    dependencies: PluginDependencies?
+    shading: Shading?
+    /// Java language version the plugin is compiled for.
+    javaVersion: Int
+    /// Java version tests are compiled with and run on.
+    testJavaVersion: Int
+    testMaxHeapSize: String = "512m"
+    /// Extra branch patterns releases may be cut from.
+    releaseBranchPatterns: [String]?
+  }
+}
+
+/// A dependency on another project of the build.
+record ProjectDependency {
+  /// The project's path, e.g. `:` for the root project.
+  path: String
+  /// The consumable configuration to depend on, when not the project's default variants.
+  configuration: String?
+}
+
+/// Dependencies on other projects of the build.
+record ProjectDependencies {
+  implementation: [ProjectDependency]?
+}
+
+/// An XDCL Gradle plugin module of this build: schemas and the plugin descriptor live under
+/// `src/main/xdcl/`, reactions are written in Java. The same wiring as the built-in
+/// `xdclGradlePlugin` type, plus dependencies on sibling projects.
+template XdclPluginModule {
+  xdclPluginModule {
+    projectDependencies: ProjectDependencies?
+  }
+}
+
+/// Publishes a build scan for every build, under the given terms of use.
+extension BuildScan for Settings {
+  buildScan {
+    termsOfUseUrl: String
+    termsOfUseAgree: String
+  }
+}
