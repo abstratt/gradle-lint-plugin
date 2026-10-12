@@ -6,23 +6,33 @@ https://github.com/abstratt/gradle-lint-plugin/tree/xdcl-conversion. No pull req
 
 ## Test status
 
-`./gradlew assemble` passes. `./gradlew build` fails: 26 of 494 tests fail (463 pass, 5 are skipped).
+`./gradlew assemble` passes. `./gradlew build` fails on the tests. The suite was run on both sides
+of the conversion:
 
-The suite was not run on the unconverted build, so the attribution below rests on the failure
-messages rather than on a before/after comparison.
+| | Tests | Passed | Failed | Skipped |
+|---|---|---|---|---|
+| `main` (Groovy build, Gradle 9.0.0) | 493 | 487 | 1 | 5 |
+| `xdcl-conversion` (Gradle 9.8 snapshot) | 494 | 466 | 23 | 5 |
+
+The one failure on `main` was a file-lock error while fetching a Gradle distribution
+(`FixGradleLintTaskSpec`, 9.1.0), with a second checkout building at the same time. The extra test
+on the branch is the new `SourceCollectorTest` case.
+
+The 23 failures on the branch come from the Gradle version, not from the build conversion:
 
 | Count | Cause |
 |---|---|
 | 21 | TestKit fixture scripts use multi-string dependency notation (`group:`, `name:`, `version:`), which Gradle 9.8 deprecates. nebula-test fails a build that prints deprecation warnings. |
 | 2 | nebula-test tries to download the snapshot distribution by its version string and gets a 404 (`gradle-9.8.0-20261012070500+0000-bin.zip`). |
-| 3 | Network timeouts while fetching Gradle distributions (9.1.0 and others). |
 
-CI on the branch will fail on at least the first two groups.
+An earlier run on the branch had 26 failures: the same 23 plus 3 network timeouts while fetching
+Gradle distributions, which did not recur.
 
-Failing specs: `GradleLintPluginSpec` (11), `MultiProjectCircularDependencyRuleSpec` (7),
-`MavenBomRecommendationProviderSpec` (2), and one each in `UnusedDependencyRuleSpec`,
-`SpaceAssignmentRuleSpec`, `Issue39Spec`, `GradleLintRuleIntegSpec`, `FixGradleLintTaskSpec` and
-`FindMethodReferencesSpec`.
+CI on the branch will fail on both groups.
+
+Failing specs: `GradleLintPluginSpec` (10), `MultiProjectCircularDependencyRuleSpec` (7),
+`MavenBomRecommendationProviderSpec` (2), and one each in `UnusedDependencyRuleSpec`, `Issue39Spec`,
+`GradleLintRuleIntegSpec` and `FindMethodReferencesSpec`.
 
 ## What changed
 
@@ -113,7 +123,7 @@ The comparison in numbers:
   upstream fails at configuration time rather than at compile time. Plugin implementation classes
   are plain strings in the script, unchecked, exactly as before.
 - **It depends on pre-release tooling.** The build now needs a snapshot Gradle distribution that
-  can change without notice, which is also what the 26 test failures trace back to. The old build
+  can change without notice, which is also what the test failures trace back to. The old build
   ran on a released Gradle.
 - **Editor and ecosystem support is thin.** XDCL needs the toolkit or the IntelliJ plugin; IDEs,
   Dependabot-style updaters and most contributors know `build.gradle` and do not know
@@ -135,9 +145,16 @@ closer to break-even, with the snapshot distribution as the main drawback.
 
 ## What was verified
 
-- The four dependency reports (`build/reports/project/*-dependencies.txt`), the shaded jar's entry
-  list and the generated POM match the pre-conversion build, and `gradle.lockfile` is untouched.
-  The POM differs only in build date and branch name.
+- The configured model of the root project matches the pre-conversion build: dependencies, forced
+  versions, relocations, toolchains, test settings, contacts, release branch patterns, plugin
+  registrations, publications and locked configurations.
+- The shaded jar's entry list matches (7342 entries), and `gradle.lockfile` is untouched.
+- The four dependency reports (`build/reports/project/*-dependencies.txt`) resolve the same
+  versions but are not byte-identical: the constraint lines come out in a different order and the
+  header no longer shows the project description.
+- The generated POM matches apart from the version, commit, build date, branch name and the
+  recorded Gradle version.
+- The jar manifest's `Class-Path` lists the same entries in a different order.
 - Every `.xdsl` and `.gradle.xdcl` in the main build validates clean with the XDCL language server.
 - `xdcl-example` reports the two expected violations from `lintGradle` (`dependency-parentheses`
   and `dependency-tuple`) and honours the `gradleLint.ignore` block.
@@ -159,6 +176,11 @@ closer to break-even, with the snapshot distribution as the main drawback.
 
 ## Known limits
 
+- The old `tasks.wrapper` block (BIN distribution, version, checksum) has no equivalent. Running
+  `./gradlew wrapper` would write the `gradle-9.8.0-20261012070500+0000-bin.zip` URL, which returns
+  404, and drop the checksum. Edit `gradle-wrapper.properties` by hand instead.
+- The root `build` now also builds and checks `gradle-lint-xdcl-plugin`, so CI and the release
+  workflow need a Java 17 toolchain for it.
 - The XDCL language server cannot validate `xdcl-example/settings.gradle.xdcl`: the example
   includes its parent directory as a build, and the sync tool drops builds outside the tree.
   Gradle itself runs it fine.
