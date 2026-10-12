@@ -56,6 +56,83 @@ Failing specs: `GradleLintPluginSpec` (11), `MultiProjectCircularDependencyRuleS
 Left alone: `example/` and `issues/issue38/` (standalone consumer samples), `gradle.properties`,
 `gradle.lockfile`, and the CI workflows.
 
+## Is the new build definition better than the old one?
+
+In short: the files a maintainer edits day to day are better; the build as a whole is larger and,
+for a single-project repository, not clearly a net win yet.
+
+The comparison in numbers:
+
+| | Before | After |
+|---|---|---|
+| Build scripts | `settings.gradle` + `build.gradle`: 239 lines | `settings.gradle.xdcl` + `build.gradle.xdcl`: 132 lines |
+| Supporting build logic | none | `build-logic/`: about 440 lines (110 schema, 300 Java, 34 scripts and descriptor) |
+| Total | 239 lines, 2 files | about 570 lines, 11 files |
+
+### Where the new definition is better
+
+- **The build script is data only.** `build.gradle.xdcl` holds the things that actually change —
+  dependencies, plugin registrations, relocations, Java versions — with no task wiring, closures or
+  `afterEvaluate` between them. The old script mixed both, so the dependency list sat next to a
+  test-listener closure and compile-ordering hacks.
+- **It is checked against a schema before Gradle runs.** A misspelled property, a wrong type or a
+  missing required value is reported by the language server in milliseconds, with a location. In
+  the Groovy script the same mistakes surface when the build configures, or not at all: a
+  misspelled property on a dynamic object can be silently ignored.
+- **The model is documented and discoverable.** Every property in `nebula-build.xdsl` has a type
+  and most have a doc comment, which editors show on hover and completion. The old script's
+  vocabulary was whatever the applied plugins happened to add at runtime.
+- **Tooling can read and rewrite it.** Because the script is a value tree rather than a program, a
+  tool can answer "what is the effective value of X and where does it come from" or edit a
+  dependency without executing or parsing arbitrary Groovy.
+- **Intent has names.** The configuration the old build called `plugin` — easily confused with
+  Gradle plugins — is `bundled` in the script, with documentation saying it is packed into the
+  jar and kept out of the POM. `shading { include, relocate }` states as a pair what was spread
+  over a `shadowJar` block.
+- **Build logic is typed, compiled code.** The reaction is Java checked by the compiler, where the
+  old logic was untyped Groovy evaluated on each configuration.
+- **Conventions are reusable.** A second Nebula-style plugin project in this build could declare
+  `nebulaGradlePlugin { … }` and get the same wiring. With one such project today this is a
+  potential benefit, not a realised one.
+
+### Where it is worse, or no better
+
+- **There is more of it.** Total build definition more than doubled, and what was one readable
+  file is now a script, a schema and a reaction. Understanding what the build *does* means reading
+  `NebulaGradlePluginReaction.java`; understanding what it *is* means reading `build.gradle.xdcl`.
+- **The imperative code did not go away; it moved.** Everything that was awkward in `build.gradle`
+  (compile ordering, removing `gradleApi()`, the test summary) is still there, now in Java and
+  somewhat more verbose.
+- **New concepts need three edits.** Adding a dependency or a relocation is a one-line change, as
+  before. Adding something the schema has no slot for — a new configuration, say — means changing
+  the schema, the reaction and the script.
+- **The schema is bespoke.** `nebulaGradlePlugin` was shaped to fit this one build. It is not a
+  shared, maintained project type, so nobody else's documentation or experience applies to it.
+- **Some typing was lost at the edges.** The Nebula extensions (`contacts`, `nebulaRelease`,
+  `javaCrossCompile`) are configured through Groovy's dynamic invoker by name, so a rename
+  upstream fails at configuration time rather than at compile time. Plugin implementation classes
+  are plain strings in the script, unchecked, exactly as before.
+- **It depends on pre-release tooling.** The build now needs a snapshot Gradle distribution that
+  can change without notice, which is also what the 26 test failures trace back to. The old build
+  ran on a released Gradle.
+- **Editor and ecosystem support is thin.** XDCL needs the toolkit or the IntelliJ plugin; IDEs,
+  Dependabot-style updaters and most contributors know `build.gradle` and do not know
+  `.gradle.xdcl`. The `latest.release` and `9.+` dynamic versions were carried over unchanged, so
+  nothing improved there either.
+
+### What stayed the same
+
+The outputs. Resolved dependencies, the shaded jar's contents, the POM and the lockfile are
+identical, so the conversion changed how the build is *described*, not what it *produces*.
+
+### Verdict
+
+The declarative script is a real improvement in readability, validation and tool-friendliness, and
+that is the part people touch most often. The cost is a larger, more layered build and a dependency
+on experimental tooling. That trade pays off when several projects share the conventions or when
+tooling needs to read and edit build definitions; for this repository on its own, today, it is
+closer to break-even, with the snapshot distribution as the main drawback.
+
 ## What was verified
 
 - The four dependency reports (`build/reports/project/*-dependencies.txt`), the shaded jar's entry
