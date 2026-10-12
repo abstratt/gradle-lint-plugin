@@ -72,11 +72,30 @@ If [gradle/gradle#11106](https://github.com/gradle/gradle/issues/11106) lands so
 
 While it is great to have automatic fix, not having it is worse. So for now warning about this with the same detail as before is much better than a broken experience with new gradle configurations
 
+## Using from an XDCL build
+
+A build whose settings are written in XDCL applies and configures linting from `settings.gradle.xdcl`, through the `com.netflix.nebula.lint.xdcl` plugin (the `gradle-lint-xdcl-plugin` module):
+
+```
+settings {
+  plugins [
+    { id "com.netflix.nebula.lint.xdcl", version "<version>" }
+  ]
+  gradleLint {
+    rules ["all-dependency"]
+    criticalRules ["dependency-parentheses"]
+  }
+}
+```
+
+The `gradleLint` block takes the same options as the `gradleLint` extension of a Groovy build script (`rules`, `criticalRules`, `excludedRules`, `reportFormat`, `reportOnlyFixableViolations`, `alwaysRun`, `autoLintAfterFailure`, `skipForTasks`), and the plugin is applied to every project of the build. See [xdcl-example](xdcl-example) for a complete build.
+
 ## Warning
 
 Gradle Lint Plugin currently doesn't support:
 
 * kotlin build scripts. Please, switch to groovy build script if you want to use linting. [#166](https://github.com/nebula-plugins/gradle-lint-plugin/issues/166)
+* XDCL build scripts. Projects configured by a `build.gradle.xdcl` are skipped: lint rules only inspect groovy build scripts.
 
 ## License
 

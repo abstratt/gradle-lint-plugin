@@ -75,7 +75,7 @@ class LintService {
     }
 
     private RuleSet ruleSetForProject(Project p, boolean onlyCriticalRules) {
-        if (p.buildFile.exists()) {
+        if (SourceCollector.isLintable(p.buildFile)) {
             GradleLintExtension extension
             try {
                 extension = p.extensions.getByType(GradleLintExtension)

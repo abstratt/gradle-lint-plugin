@@ -1,0 +1,19 @@
+settings {
+  pluginManagement {
+    includedBuilds ["build-logic"]
+  }
+  plugins [
+    { id "com.netflix.nebula.lint.buildlogic" }
+  ]
+  dependencyResolutionManagement {
+    repositories [:mavenCentral, :gradlePluginPortal]
+  }
+  buildScan {
+    termsOfUseUrl "https://gradle.com/terms-of-service"
+    termsOfUseAgree "yes"
+  }
+  rootProject {
+    name "gradle-lint-plugin"
+  }
+  include ["gradle-lint-xdcl-plugin"]
+}

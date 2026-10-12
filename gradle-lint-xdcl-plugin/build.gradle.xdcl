@@ -1,0 +1,9 @@
+// The XDCL front end of the lint plugin: lets an XDCL build configure linting from its
+// settings.gradle.xdcl. A separate module because the XDCL reaction API needs Java 17, while the
+// lint plugin itself still targets Java 8.
+xdclPluginModule {
+  projectDependencies {
+    // the shaded jar the lint plugin ships, along with the dependencies it leaves external
+    implementation [{ path ":", configuration "shadowRuntimeElements" }]
+  }
+}

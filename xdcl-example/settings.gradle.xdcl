@@ -1,0 +1,21 @@
+// Linting configured from an XDCL settings script: the plugin is applied to every project of the
+// build, and the Groovy build script of `legacy` is what gets linted.
+settings {
+  pluginManagement {
+    // resolves the lint plugin from this repository's sources
+    includedBuilds [".."]
+  }
+  plugins [
+    { id "com.netflix.nebula.lint.xdcl" }
+  ]
+  dependencyResolutionManagement {
+    repositories [:mavenCentral]
+  }
+  gradleLint {
+    rules ["dependency-parentheses", "dependency-tuple"]
+  }
+  rootProject {
+    name "xdcl-example"
+  }
+  include ["legacy"]
+}

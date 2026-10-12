@@ -9,11 +9,18 @@ import org.gradle.api.Project
 class SourceCollector {
 
     /**
+     * Lint rules inspect Groovy build scripts: an XDCL build file has nothing for them to parse.
+     */
+    static boolean isLintable(File buildFile) {
+        buildFile.exists() && !buildFile.name.toLowerCase().endsWith('.xdcl')
+    }
+
+    /**
      * It scans given build file for possible `apply from: 'another.gradle'` and recursively
      * collect all build files which are present.
      */
     static List<File> getAllFiles(File buildFile, Project project) {
-        if (buildFile.exists()) {
+        if (isLintable(buildFile)) {
             List<File> result = new ArrayList<>()
             result.add(buildFile)
             SourceCode sourceCode = new SourceString(buildFile.text)

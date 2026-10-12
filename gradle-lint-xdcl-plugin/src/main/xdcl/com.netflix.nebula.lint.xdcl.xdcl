@@ -1,0 +1,6 @@
+plugin {
+  displayName "Nebula Lint plugin for XDCL builds"
+  description "Applies and configures the Nebula Lint plugin from an XDCL settings script"
+  tags ["nebula", "lint", "xdcl"]
+  reactions [:com.netflix.nebula.lint.xdcl.GradleLintReaction]
+}

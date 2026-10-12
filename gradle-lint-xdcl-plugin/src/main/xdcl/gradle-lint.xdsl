@@ -1,0 +1,32 @@
+package com.netflix.nebula.lint.xdcl
+
+import xdcl.gradle.bootstrap
+
+/// A CodeNarc report format.
+type ReportFormat = Symbol where it in [:html, :xml, :text]
+
+/// Applies the Gradle Lint plugin to every project of the build and configures it — the settings
+/// counterpart of the `gradleLint { … }` block of a Groovy build script.
+///
+/// Lint rules inspect Groovy build scripts; projects configured by a `.gradle.xdcl` or `.gradle.kts`
+/// script are skipped.
+extension GradleLint for Settings {
+  gradleLint {
+    /// Rules (or rule sets) to check.
+    rules: [String]?
+    /// Rules that, when violated, cause the build to fail.
+    criticalRules: [String]?
+    /// Individual rules to exclude from the rule sets in [rules].
+    excludedRules: [String]?
+    /// Format of the report `generateGradleLintReport` writes.
+    reportFormat: ReportFormat = :html
+    reportOnlyFixableViolations: Bool = false
+    /// Whether lint runs automatically at the end of every build.
+    alwaysRun: Bool = true
+    /// Whether the automatic lint still runs when the build failed.
+    autoLintAfterFailure: Bool = true
+    /// Tasks that never trigger the automatic lint, added to the plugin's built-in list (`help`,
+    /// `tasks`, `dependencies`, …).
+    skipForTasks: [String]?
+  }
+}
